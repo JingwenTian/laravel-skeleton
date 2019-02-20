@@ -1,0 +1,12 @@
+{
+    "name": "接口文档",
+    "version": "1.0.0",
+    "description": "XX服务接口文档",
+    "title": "接口文档",
+    "url" : "",
+    "sampleUrl": "http://gateway.inner.evente.cn:8000/xxx/api",
+    "template": {
+      "withCompare": true,
+      "withGenerator": true
+    }
+  }
