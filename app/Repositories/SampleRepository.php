@@ -3,11 +3,12 @@
 namespace App\Repositories;
 
 use App\Exceptions\RuntimeException;
+use App\Jobs\SampleJobs;
 use App\Models\Common\ModelConsts;
+use App\Models\MongoDB\SampleMongoModel;
 use App\Models\Trans\UserTrans;
 use App\Models\User;
 use App\Services\DependentHttpServices\Sample\SampleService;
-use App\Models\MongoDB\SampleMongoModel;
 
 /**
  * Class SampleRepository.
@@ -16,7 +17,6 @@ use App\Models\MongoDB\SampleMongoModel;
  */
 class SampleRepository
 {
-
     /**
      * SampleRepository constructor.
      */
@@ -35,7 +35,7 @@ class SampleRepository
         $codeItems = app(SampleService::class)->countryCodeItems();
 
         return [
-            'provinces' => $provinceItems,
+            'provinces'    => $provinceItems,
             'country_code' => $codeItems,
         ];
     }
@@ -43,13 +43,14 @@ class SampleRepository
     /**
      * MySQL数据操作示例.
      *
-     * @return array
      * @throws \Throwable
+     *
+     * @return array
      */
     public function mysqlSample(): array
     {
         // 新增数据
-        $mockUserItem = ['name' => 'hello' . time(), 'email' => time() . '@gmail.com', 'password' => password_hash(time(), 1)];
+        $mockUserItem = ['name' => 'hello'.time(), 'email' => time().'@gmail.com', 'password' => password_hash(time(), 1)];
         throw_unless($userInserted = app(User::class)->create($mockUserItem), new RuntimeException('创建失败'));
 
         // 查询数据
@@ -58,7 +59,7 @@ class SampleRepository
 
         // 更新数据
         //app(User::class)->filter($condition)->update(['name' => 'hello world' . time()]);
-        $userItem->name = 'hello world' . time();
+        $userItem->name = 'hello world'.time();
         throw_unless($userItem->save(), new RuntimeException('修改失败'));
         //return $userItem->toArray();
 
@@ -73,8 +74,9 @@ class SampleRepository
     /**
      * MongoDB 数据操作示例.
      *
-     * @return array
      * @throws \Throwable
+     *
+     * @return array
      */
     public function mongoSample(): array
     {
@@ -84,12 +86,25 @@ class SampleRepository
 
         // 查询数据
         $condition = ['tags' => 'sample', '_sort' => '_id', '_order' => 'asc'];
+
         return app(SampleMongoModel::class)->read($condition, ModelConsts::GET_ALL_TOPIC);
     }
 
     public function kafkaSample(): array
     {
-
     }
 
+    /**
+     * 分发任务示例.
+     */
+    public function jobsSample(): void
+    {
+        $userItem = app(User::class)->filter(['id' => 1])->first();
+
+        // 分发异步队列任务
+        SampleJobs::dispatch($userItem);
+
+        // 延时分发
+        SampleJobs::dispatch($userItem)->delay(now()->addSeconds(10));
+    }
 }

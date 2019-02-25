@@ -15,7 +15,8 @@ use App\Services\DependentRpcServices\AbstractBaseService;
 use App\Support\Status\Status;
 
 /**
- * Class SampleService
+ * Class SampleService.
+ *
  * @package App\Services\DependentRpcServices\Account
  */
 class SampleService extends AbstractBaseService
@@ -33,8 +34,10 @@ class SampleService extends AbstractBaseService
      * 调用示例.
      *
      * @param int $userId
-     * @return array
+     *
      * @throws \Throwable
+     *
+     * @return array
      */
     public function getSample(int $userId): array
     {
@@ -44,6 +47,7 @@ class SampleService extends AbstractBaseService
             $this->hasError(),
             new RuntimeException($this->getError(), Status::CODE_COMMON_RESOURCE_NOT_EXIST)
         );
+
         return $resource;
     }
 }

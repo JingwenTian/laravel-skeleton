@@ -10,14 +10,14 @@
 
 namespace App\Support\Queue\Kakfa;
 
-use RdKafka\Conf;
-use RdKafka\KafkaConsumer;
-use RdKafka\TopicConf;
 use function class_exists;
 use function extension_loaded;
 use function is_array;
 use function json_decode;
 use function json_last_error;
+use RdKafka\Conf;
+use RdKafka\KafkaConsumer;
+use RdKafka\TopicConf;
 
 /**
  * Class Consumer.

@@ -16,7 +16,8 @@ use App\Support\Constant\CacheKey;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Class UserSampleService
+ * Class UserSampleService.
+ *
  * @package App\Services\DataLayer
  */
 class UserSampleService
@@ -25,6 +26,7 @@ class UserSampleService
      * 获取用户详情.
      *
      * @param int $userId
+     *
      * @return array
      */
     public static function userItem(int $userId): array
@@ -38,6 +40,7 @@ class UserSampleService
      * 获取用户列表.
      *
      * @param array $params
+     *
      * @return array
      */
     public static function userItems(array $params): array
@@ -46,5 +49,4 @@ class UserSampleService
             return app(User::class)->read($params, ModelConsts::GET_ALL_TOPIC);
         });
     }
-
 }

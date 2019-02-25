@@ -18,5 +18,4 @@ class Status extends Common
     |--------------------------------------------------------------------------
     */
     public const CODE_ORDER_CREATE_FAILED = 800000; // 示例: 创建订单失败
-
 }

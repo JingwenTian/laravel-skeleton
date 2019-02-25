@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SampleRequest;
+use App\Repositories\SampleRepository;
 use App\Support\Constant\ELogTopicConst;
 use App\Transformers;
-use App\Repositories\SampleRepository;
 use Illuminate\Http\Request;
 
 /**
@@ -81,6 +82,7 @@ class SampleController extends Controller
 
             $result['mysql'] = $this->_repository->mysqlSample();
 
+            $this->_repository->jobsSample();
         } catch (\Throwable $e) {
             app()->elog->notice(ELogTopicConst::TOPIC_UNKNOWN, '示例请求异常', ['exception' => $e, 'conditions' => $params ?? []]);
 

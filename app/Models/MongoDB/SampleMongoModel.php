@@ -1,6 +1,6 @@
 <?php
 /**
- * Mongo 示例 Model
+ * Mongo 示例 Model.
  *
  * @copyright  eventmosh
  * @author     jingwentian
@@ -11,7 +11,8 @@
 namespace App\Models\MongoDB;
 
 /**
- * Class SampleMongoModel
+ * Class SampleMongoModel.
+ *
  * @package App\Models\MongoDB
  */
 class SampleMongoModel extends AbstractMongoModel

@@ -7,9 +7,12 @@
  * @license    北京活动时文化传媒有限公司
  * @dateTime:  2018/9/19 12:17
  */
+
 namespace App\Models\MongoDB;
+
 use Jenssegers\Mongodb\Eloquent\HybridRelations;
 use Jenssegers\Mongodb\Eloquent\Model;
+
 /**
  * Class AbstractMongoModel.
  *

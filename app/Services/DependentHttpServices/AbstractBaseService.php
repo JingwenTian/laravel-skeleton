@@ -15,8 +15,6 @@ use App\Support\Status\Status;
 use ELog\Constants;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception as Exception;
-use GuzzleHttp\Promise\Promise;
-use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\RequestOptions;
 
