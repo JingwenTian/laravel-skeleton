@@ -48,7 +48,7 @@ class SampleJobs implements ShouldQueue
             return;
         }
 
-        $this->user->name .= ' jobs';
+        $this->user->name = 'update by jobs';
         $this->user->save();
     }
 }

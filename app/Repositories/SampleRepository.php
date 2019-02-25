@@ -2,13 +2,16 @@
 
 namespace App\Repositories;
 
+use App\Events\SampleEvent;
 use App\Exceptions\RuntimeException;
 use App\Jobs\SampleJobs;
 use App\Models\Common\ModelConsts;
 use App\Models\MongoDB\SampleMongoModel;
 use App\Models\Trans\UserTrans;
 use App\Models\User;
+use App\Notifications\SampleNotification;
 use App\Services\DependentHttpServices\Sample\SampleService;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Class SampleRepository.
@@ -106,5 +109,26 @@ class SampleRepository
 
         // 延时分发
         SampleJobs::dispatch($userItem)->delay(now()->addSeconds(10));
+    }
+
+    /**
+     * 消息通知示例.
+     */
+    public function notificationsSample(): void
+    {
+        $userItem = app(User::class)->filter(['id' => 1])->first();
+
+        // 发送通知
+        Notification::route('mail', '562234934@qq.com')->notify(new SampleNotification($userItem));
+    }
+
+    /**
+     * 事件系统示例.
+     */
+    public function eventSample(): void
+    {
+        $userItem = app(User::class)->filter(['id' => 1])->first();
+
+        event(new SampleEvent($userItem));
     }
 }
