@@ -56,10 +56,13 @@ return [
             'region' => env('SQS_REGION', 'us-east-1'),
         ],
 
+        // @doc https://learnku.com/docs/laravel/5.5/queues/1324
+        // @doc https://redis.io/topics/cluster-spec#keys-hash-tags
+        // 如果使用 Redis 集群, 队列名称必须包含key hash tag, 否则会抛错: ERR 'EVAL' command keys must in same slot
         'redis' => [
             'driver'      => 'redis',
             'connection'  => 'default',
-            'queue'       => 'default',
+            'queue'       => '{'.env('QUEUE_NAME', 'default').'}', // 队列名称: queues:{default}
             'retry_after' => 90,
         ],
 
