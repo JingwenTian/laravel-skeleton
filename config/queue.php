@@ -99,6 +99,17 @@ return [
     | can control which database and table are used to store the jobs that
     | have failed. You may change them to any database / table you wish.
     |
+    | @doc https://learnku.com/docs/laravel/5.5/queues/1324
+    |
+    | 使用 redis 作为队列时, 任务超出重试次数后会插入 failed_jobs 表中失败的消息, 待人工介入处理
+    | 1. 如果使用队列必须要创建 failed_jobs 表(无法将失败的消息存入redis)
+    | 2. 失败的消息无法自动处理(超过了自动重试次数), 需要手工进行重试
+    | 3. 相关命令
+    |   3.1. 创建failed_jobs表:
+    |       php artisan queue:failed-table
+    |       php artisan migrate
+    |   3.2. 列出需要重试的消息: php artisan queue:failed
+    |   3.3. 执行重试: php artisan queue:retry [id|all]
     */
 
     'failed' => [
