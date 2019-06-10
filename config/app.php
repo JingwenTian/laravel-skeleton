@@ -76,8 +76,8 @@ return [
     | to any of the locales which will be supported by the application.
     |
     */
-
-    'locale' => 'zh-CN',
+    'available_locales' => ['zh_CN', 'en_US'], // 支持的语言项
+    'locale'            => 'zh_CN',
 
     /*
     |--------------------------------------------------------------------------
@@ -90,7 +90,7 @@ return [
     |
     */
 
-    'fallback_locale' => 'en_US',
+    'fallback_locale' => 'zh_CN', // en_US
 
     /*
     |--------------------------------------------------------------------------
@@ -174,6 +174,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\LocalizationProvider::class,
     ],
 
     /*

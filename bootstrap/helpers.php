@@ -51,3 +51,58 @@ if (!function_exists('pagination_format')) {
         ];
     }
 }
+
+if (!function_exists('lang')) {
+    /**
+     * 翻译字段(从Yaconf 配置服务中获取).
+     *
+     * @param string $key
+     * @param string $default
+     * @param array  $replace
+     * @param string $locale
+     *
+     * @example lang('foo.bar')
+     *          lang('foo.bar', 'default value', ['replace' => 'replace value'])
+     *
+     * @return \Illuminate\Contracts\Translation\Translator|string|array|null
+     */
+    function lang($key = null, $default = null, $replace = [], $locale = null)
+    {
+        $locale = $locale ?? app()->locale;
+        $localeKey = 'lang_'.strtolower($locale ?: 'zh_CN');
+        if (!$key) {
+            return Yaconf::get($localeKey, []);
+        }
+        $localeVal = Yaconf::get($localeKey.'.'.$key, $default);
+        if (is_string($localeVal) && $replace) {
+            foreach ((array) $replace as $key => $value) {
+                $localeVal = str_replace(
+                    [':'.$key, ':'.Str::upper($key), ':'.Str::ucfirst($key)],
+                    [$value, Str::upper($value), Str::ucfirst($value)],
+                    $localeVal
+                );
+            }
+        }
+
+        return $localeVal;
+    }
+}
+
+if (!function_exists('service_config')) {
+    /**
+     * 获取 yaconf 基础服务配置.
+     *
+     * @param string $key
+     * @param string $default
+     *
+     * @return mixed
+     */
+    function service_config(string $key = null, string $default = null)
+    {
+        if (!$key) {
+            return Yaconf::get('services', []);
+        }
+
+        return Yaconf::get('services.'.$key, $default);
+    }
+}
