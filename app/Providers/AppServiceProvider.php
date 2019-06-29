@@ -2,8 +2,12 @@
 
 namespace App\Providers;
 
-use App\Validators\IdNumberValidator;
-use App\Validators\PhoneValidator;
+use App\Validators\ChinaPhoneValidator;
+use App\Validators\ExpressNoValidator;
+use App\Validators\HKCardValidator;
+use App\Validators\IdCardValidator;
+use App\Validators\PassportCardValidator;
+use App\Validators\TWCardValidator;
 use ELog\Constants;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -15,8 +19,12 @@ class AppServiceProvider extends ServiceProvider
      * @var array
      */
     protected $validators = [
-        'phone'     => PhoneValidator::class,
-        'id_no'     => IdNumberValidator::class,
+        'express_no'     => ExpressNoValidator::class,
+        'chaina_phone'   => ChinaPhoneValidator::class,
+        'id_card'        => IdCardValidator::class,
+        'hk_card'        => HKCardValidator::class,
+        'passport_card'  => PassportCardValidator::class,
+        'tw_card'        => TWCardValidator::class,
     ];
 
     /**

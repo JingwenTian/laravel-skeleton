@@ -10,6 +10,7 @@
 
 namespace App\Support\Queue\Kakfa;
 
+use function json_encode;
 use RdKafka\Conf;
 use RdKafka\Producer as RdKafkaProducer;
 
@@ -51,20 +52,11 @@ class Producer
         }
 
         $conf = new Conf();
-        //$conf->set('group.id', $publishOptions['producer'] ?? '');
-        $conf->set('client.id', 'checkout-client');
-        $conf->set('sasl.mechanisms', 'PLAIN');
+        $conf->set('client.id', 'databus');
         $conf->set('api.version.request', 'true');
-        $conf->set('ssl.ca.location', $options['ssl_ca_path']);
         $conf->set('message.send.max.retries', 5);
         $conf->set('socket.timeout.ms', 50);
         $conf->set('socket.blocking.max.ms', 1);
-
-        if (\in_array(APP_ENV, ['development', 'test'], false)) {
-            $conf->set('sasl.username', $options['username']);
-            $conf->set('sasl.password', $options['password']);
-            $conf->set('security.protocol', 'SASL_SSL');
-        }
 
         if (\function_exists('pcntl_sigprocmask')) {
             pcntl_sigprocmask(SIG_BLOCK, [SIGIO]);
@@ -88,8 +80,7 @@ class Producer
      */
     public function produce(array $message = null, string $messageKey = null): void
     {
-        //$payload = \json_encode($message ?? []);
-        $payload = \json_encode(['body' => \json_encode(['body' => $message ?? []])]); // 兼容原通知格式
+        $payload = json_encode($message ?? []);
         $this->_producerTopic->produce(RD_KAFKA_PARTITION_UA, 0, $payload, $messageKey);
         while ($this->_producer->getOutQLen() > 0) {
             $this->_producer->poll(5);

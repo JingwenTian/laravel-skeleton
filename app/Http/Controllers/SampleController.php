@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SampleRequest;
-use App\Repositories\SampleRepository;
+use App\Repositories\SampleRepository as Sample;
 use App\Support\Constant\ELogTopicConst;
 use App\Transformers;
 use Illuminate\Http\Request;
@@ -16,17 +16,19 @@ use Illuminate\Http\Request;
 class SampleController extends Controller
 {
     /**
-     * @var \App\Repositories\SampleRepository
+     * @var Sample
      */
     protected $_repository;
 
     /**
      * SampleController constructor.
+     *
+     * @param Sample $sample
      */
-    protected function init(): void
+    protected function __construct(Sample $sample)
     {
-        parent::init();
-        $this->_repository = app(SampleRepository::class);
+        parent::__construct();
+        $this->_repository = $sample;
     }
 
     /**

@@ -84,24 +84,16 @@ class Consumer
         }
         // Global config
         $conf = new Conf();
-
-        $conf->set('sasl.mechanisms', 'PLAIN');
         $conf->set('api.version.request', 'true');
-        $conf->set('ssl.ca.location', $options['ssl_ca_path']);
         $conf->set('message.send.max.retries', 5);
-        $conf->set('client.id', 'order-client');
+        $conf->set('client.id', 'databus');
         $conf->set('group.id', $subscribeOptions['consumer'] ?? '');
         $conf->set('metadata.broker.list', $options['server']);
 
-        if (\in_array(APP_ENV, ['development', 'test'], false)) {
-            $conf->set('sasl.username', $options['username']);
-            $conf->set('sasl.password', $options['password']);
-            $conf->set('security.protocol', 'SASL_SSL');
-        }
         // Topic config
         $topicConf = new TopicConf();
 
-        $topicConf->set('auto.offset.reset', 'smallest');
+        $topicConf->set('auto.offset.reset', $subscribeOptions['offset'] ?? 'largest');
         $conf->setDefaultTopicConf($topicConf);
 
         // High-level consumer
@@ -177,13 +169,7 @@ class Consumer
      */
     public function getMessage(): array
     {
-        $messageBody = $this->_message['body'] ?? '';
-        $message = json_decode($messageBody, true);
-        if (json_last_error() === JSON_ERROR_NONE) {
-            return $message['body'] ?? [];
-        }
-
-        return [];
+        return $this->_message;
     }
 
     /**

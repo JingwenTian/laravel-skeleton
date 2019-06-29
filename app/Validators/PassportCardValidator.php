@@ -1,6 +1,6 @@
 <?php
 /**
- * 身份证验证规则.
+ * 护照验证规则.
  *
  * @copyright  eventmosh
  * @author     jingwentian
@@ -11,11 +11,11 @@
 namespace App\Validators;
 
 /**
- * Class IdNumberValidator.
+ * Class PassportCardValidator.
  *
  * @package App\Validators
  */
-class IdNumberValidator
+class PassportCardValidator
 {
     /**
      * @param $attribute
@@ -27,6 +27,9 @@ class IdNumberValidator
      */
     public function validate($attribute, $value, $parameters, $validator)
     {
-        return preg_match('/^[1-9]\d{7}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])\d{3}$|^[1-9]\d{5}[1-9]\d{3}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])\d{3}([0-9]|[Xx])$/', $value);
+        // 规则： 14/15开头 + 7位数字, G + 8位数字, P + 7位数字, S/D + 7或8位数字,等
+        // 样本： 141234567, G12345678, P1234567
+        // /^[a-zA-Z]{5,17}$/ 或 /^[a-zA-Z0-9]{5,17}$/
+        return preg_match('/^([a-zA-z]|[0-9]){5,17}$/', $value);
     }
 }
