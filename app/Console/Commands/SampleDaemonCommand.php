@@ -64,7 +64,7 @@ class SampleDaemonCommand extends Command
 
             public function process(array $message)
             {
-                sleep(5);
+                sleep(1);
                 $message && print_r($message);
             }
         };
@@ -73,7 +73,7 @@ class SampleDaemonCommand extends Command
         // 通过调整 timeout 时间来模拟超时后进程kill停止(任务未执行完直接退出)
         // 通过调整消耗的 memory 和限制的 memery 来模拟内存超限后的进程平滑终止
         // 通过给进程发送 SIGTERM 信号来模拟进程平滑终止 kill -s SIGTERM <pid>
-        $options = new DaemonOptions($sleep = 0.1, $timeout = 120, $memory = 120);
+        $options = new DaemonOptions($sleep = 0.1, $timeout = 120, $limit = 10, $memory = 120);
         app(DaemonManager::class)->daemon($options, $processor);
     }
 }

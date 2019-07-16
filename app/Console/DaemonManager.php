@@ -16,7 +16,7 @@ use App\Support\Constant\ELogTopicConst;
  * Class DataBusService.
  *
  * @example
- *      $options = new DaemonOptions($sleep, $timeout, $memory);
+ *      $options = new DaemonOptions($sleep, $timeout, $limit, $memory);
  *      app(DaemonManager::class)->daemon($options, new OrderRefundProcess());
  * @doc 注意: 当前守护任务必须有 Supervisord 进行守护, 因为平滑重启的机制是: 进程平滑终止+supervisord重新唤起
  *
@@ -32,7 +32,20 @@ class DaemonManager
     public $shouldQuit = false;
 
     /**
+     * 进程最大执行次数.
+     *
+     * @var int
+     */
+    public $maxRequests = 0;
+
+    /**
      * Listen to the given job in a loop.
+     *
+     * 1. 通过此方法统一管理运行后台守护任务
+     * 2. 实现平滑重启进程机制 (依赖 SIGTERM 信号和 supervisord)
+     * 3. 实现超过最大执行次数重启进程机制(无需额外重启机制)
+     * 4. 实现超过最大执行时间强制终止进程机制(合理设置超时时间)
+     * 5. 实现超过内存限制时重启进程机制(避免内存溢出)
      *
      * @param DaemonOptions   $options
      * @param DaemonInterface $processor
@@ -48,6 +61,8 @@ class DaemonManager
             $this->listenForSignals();
         }
 
+        $this->maxRequests = 0;
+
         while (true) {
             try {
                 // 从队列中消费取出消息, 然后交给 process() 方法处理
@@ -60,11 +75,14 @@ class DaemonManager
                     $this->registerTimeoutHandler($options);
                 }
 
-                // 执行任务
+                // 执行任务逻辑
                 $processor->process($message);
             } catch (\Throwable $e) {
-                app()->elog->notice(ELogTopicConst::TOPIC_CONSOLE, '[console]canal process exception', ['exception' => $e, 'options' => $options, 'params' => $message ?? []]);
+                $this->output('daemon process exception', ['exception' => $e, 'options' => $options, 'params' => $message ?? []]);
             }
+
+            // 执行次数计数
+            ++$this->maxRequests;
 
             // 执行间断睡眠
             $this->sleep($options->sleep);
@@ -105,9 +123,7 @@ class DaemonManager
     protected function registerTimeoutHandler(DaemonOptions $options)
     {
         pcntl_signal(SIGALRM, function () use ($options) {
-            app()->elog->notice(ELogTopicConst::TOPIC_CONSOLE, '[console]process timeout killed', [
-                'options' => $options,
-            ]);
+            $this->output('process timeout killed', ['options' => $options]);
             $this->kill(1);
         });
         pcntl_alarm(max($options->timeout, 0));
@@ -121,10 +137,13 @@ class DaemonManager
     protected function stopIfNecessary(DaemonOptions $options)
     {
         if ($this->shouldQuit) {
-            app()->elog->notice(ELogTopicConst::TOPIC_CONSOLE, '[console]process smooth stoped');
+            $this->output('process smooth stoped', ['options' => $options]);
+            $this->stop();
+        } elseif ($options->limit && $options->limit < $this->maxRequests) {
+            $this->output('process maximum executions stoped', ['options' => $options]);
             $this->stop();
         } elseif ($this->memoryExceeded($options->memory)) {
-            app()->elog->notice(ELogTopicConst::TOPIC_CONSOLE, '[console]process memery exceeded stoped');
+            $this->output('process memery exceeded stoped', ['options' => $options]);
             $this->stop(12);
         }
     }
@@ -176,5 +195,17 @@ class DaemonManager
         } else {
             sleep($seconds);
         }
+    }
+
+    /**
+     * Write a string as notice output.
+     *
+     * @param string $string
+     * @param array  $details
+     */
+    protected function output(string $string, array $details = []): void
+    {
+        echo '['.date('Y-m-d H:i:s').'] '.$string.PHP_EOL;
+        app()->elog->notice(ELogTopicConst::TOPIC_CONSOLE, '[console]'.$string, $details);
     }
 }
