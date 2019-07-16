@@ -18,4 +18,5 @@ class ELogTopicConst
     |--------------------------------------------------------------------------
     */
     public const TOPIC_UNKNOWN = 'unknown';
+    public const TOPIC_CONSOLE = 'console'; // 后台任务
 }
