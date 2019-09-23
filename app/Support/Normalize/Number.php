@@ -29,7 +29,7 @@ class Number
     {
         $limit = $limit ?? 2;
 
-        return \sprintf("%.{$limit}f", $number);
+        return (float) \sprintf("%.{$limit}f", $number);
     }
 
     /**

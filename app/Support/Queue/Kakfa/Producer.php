@@ -10,9 +10,11 @@
 
 namespace App\Support\Queue\Kakfa;
 
+use App\Exceptions\RuntimeException;
 use function json_encode;
 use RdKafka\Conf;
 use RdKafka\Producer as RdKafkaProducer;
+use RdKafka\TopicConf;
 
 /**
  * Class Producer.
@@ -41,18 +43,16 @@ class Producer
     public function __construct(string $publishKey)
     {
         if (!\extension_loaded('rdkafka') || !\class_exists('RdKafka')) {
-            echo "PHP RdKafka extension was not installed\n";
-            exit;
-        }
-        $options = config('queue.connections.kafka', []);
-        $publishOptions = $options['options']['publish'][$publishKey] ?? [];
-        if (!$options || !$publishOptions) {
-            echo "kafka config '{$publishKey}' needed.\n";
-            exit;
+            throw new RuntimeException('PHP RdKafka extension was not installed');
         }
 
+        $options = config('queue.connections.kafka', []);
+        $publishOptions = $options['options']['publish'][$publishKey] ?? [];
+
+        throw_if(!$options || !$publishOptions, new RuntimeException('unsupported kafka topic:'.$publishKey));
+
         $conf = new Conf();
-        $conf->set('client.id', 'databus');
+        $conf->set('client.id', 'laravel-skeleton');
         $conf->set('api.version.request', 'true');
         $conf->set('message.send.max.retries', 5);
         $conf->set('socket.timeout.ms', 50);
@@ -68,7 +68,13 @@ class Producer
         $this->_producer = new RdKafkaProducer($conf);
         $this->_producer->setLogLevel(LOG_DEBUG);
         $this->_producer->addBrokers($options['server']);
-        $this->_producerTopic = $this->_producer->newTopic($publishOptions['topic'] ?? '');
+
+        // -1 必须等所有brokers同步完成的确认 1当前服务器确认 0不确认，这里如果是0回调里的offset无返回，如果是1和-1会返回offset
+        // 我们可以利用该机制做消息生产的确认，不过还不是100%，因为有可能会中途kafka服务器挂掉
+        $topicConf = new TopicConf();
+        $topicConf->set('request.required.acks', 0);
+
+        $this->_producerTopic = $this->_producer->newTopic($publishOptions['topic'] ?? '', $topicConf);
         //echo 'Begin to connect kafka topic:' . $this->_producer->getName() . ' @' . date('Y-m-d H:i:s') . PHP_EOL;
     }
 
@@ -78,12 +84,19 @@ class Producer
      * @param array       $message
      * @param string|null $messageKey
      */
-    public function produce(array $message = null, string $messageKey = null): void
+    public function produce(array $message = null, string $messageKey = null): array
     {
         $payload = json_encode($message ?? []);
+        // 兼容 enqueue/rdkafka 消息格式
+        //$payload = \json_encode(['body' => \json_encode(['body' => $message ?? [], 'properties' => [], 'headers' => []]), 'properties' => [], 'headers' => []]);
+
         $this->_producerTopic->produce(RD_KAFKA_PARTITION_UA, 0, $payload, $messageKey);
         while ($this->_producer->getOutQLen() > 0) {
             $this->_producer->poll(5);
         }
+
+        return [
+            'message_id' => $messageKey,
+        ];
     }
 }

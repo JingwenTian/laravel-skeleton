@@ -14,8 +14,8 @@ return [
         'log_path'      => config('app.env') === 'production' ? Constants::ELOG_PATH : storage_path('logs'),
         'send_email'    => true,
         'email_options' => [
-            'subject' => '活动易权限服务报警'.config('app.env'),
-            'send_to' => ['order-alarm@eventmosh.com' => '活动易订单财务交易服务报警'],
+            'subject' => '服务报警'.config('app.env'),
+            'send_to' => ['username@xxxxxxx.com' => 'username'],
         ],
     ],
 ];

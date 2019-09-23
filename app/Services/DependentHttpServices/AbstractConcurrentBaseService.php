@@ -1,11 +1,11 @@
 <?php
 /**
- * HTTP请求基类.
+ * HTTP并行请求基类.
  *
  * @copyright  eventmosh
  * @author     jingwentian
  * @license    北京活动时文化传媒有限公司
- * @dateTime:  2018/11/20 20:47
+ * @dateTime:  2018/9/26 18:28
  */
 
 namespace App\Services\DependentHttpServices;
@@ -14,29 +14,27 @@ use App\Exceptions\NetworkUnavailableException;
 use App\Support\Status\Status;
 use ELog\Constants;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception as Exception;
+use GuzzleHttp\Exception;
+use GuzzleHttp\Promise;
 use GuzzleHttp\Psr7;
 use GuzzleHttp\RequestOptions;
 
 /**
- * Class AbstractBaseService.
+ * Class AbstractConcurrentBaseService.
  *
  * @package App\Services\DependentHttpServices
- * @package App\Services\DependentHttpServices
  */
-abstract class AbstractBaseService
+abstract class AbstractConcurrentBaseService
 {
     public const HTTP_METHOD_GET = 'GET';
     public const HTTP_METHOD_POST = 'POST';
     public const HTTP_METHOD_PUT = 'PUT';
     public const HTTP_METHOD_PATCH = 'PATCH';
     public const HTTP_METHOD_DELETE = 'DELETE';
-
     private const HTTP_REQUEST_KEYS = [
         self::HTTP_METHOD_GET   => 'query',
         self::HTTP_METHOD_POST  => 'json',
     ];
-
     /**
      * @var array
      */
@@ -47,96 +45,136 @@ abstract class AbstractBaseService
         RequestOptions::DELAY           => 0, // delay (milliseconds)
         RequestOptions::HTTP_ERRORS     => true, // http_errors
     ];
-
-    /**
-     * @var string
-     */
-    protected $server;
-
-    /**
-     * @var string
-     */
-    protected $path;
-
     /**
      * @var null
      */
     private $client;
-
     /**
      * @var null
      */
     private $request;
-
+    /**
+     * @var null
+     */
+    private $response;
+    /**
+     * @var null
+     */
+    private $content;
     /**
      * @var string
      */
     private $errors = '';
-
     /**
      * @var array
      */
     private $logs = [];
-
     /**
      * @var int
      */
     private $startTime = 0;
-
     /**
      * @var int
      */
     private $endTime = 0;
 
     /**
+     * 并行请求.
+     *
      * @param $method
      * @param $path
      * @param array ...$args
+     * @param array $requests
      *
-     * @return array
+     * @return self
      */
-    protected function call(string $method, string $path, ...$args): array
+    protected function call(array $requests): self
     {
         try {
             $this->startTime = microtime(true);
             $this->setError();
-
             $this->logs = [];
 
-            [$body, $queries, $headers] = $args;
+            $this->_createHttpClient();
 
-            $uuid = \defined('APP_UUID') ? APP_UUID : '';
-            $headers = array_merge($headers, ['X-REQUEST-UUID' => $uuid, 'Accept-Language' => app()->getLocale()]);
+            $promises = [];
+            foreach ($requests as $request) {
+                $method = $request['method'] ?? self::HTTP_METHOD_GET;
+                $requestPath = sprintf('%s/%s', $this->path, $request['path']);
 
-            $this->_createHttpClient($method, $path, $headers);
+                $headers = array_merge($request['headers'] ?? [], ['X-REQUEST-UUID' => \defined('APP_UUID') ? APP_UUID : '', 'Accept-Language' => app()->getLocale()]);
+                $extends = [
+                    self::HTTP_REQUEST_KEYS[self::HTTP_METHOD_GET] => $request['queries'] ?? [],
+                    'headers'                                      => $headers,
+                ];
+                if ($method !== self::HTTP_METHOD_GET) {
+                    $extends[self::HTTP_REQUEST_KEYS[self::HTTP_METHOD_POST]] = $request['body'] ?? [];
+                }
+                $extends = array_merge($this->options, $request['options'] ?? [], $extends);
 
-            $extends = [
-                self::HTTP_REQUEST_KEYS[self::HTTP_METHOD_GET] => $queries,
-            ];
-
-            if ($method !== self::HTTP_METHOD_GET) {
-                $extends[self::HTTP_REQUEST_KEYS[self::HTTP_METHOD_POST]] = $body;
+                $this->logs['promises'][] = ['method' => $method, 'path' => $requestPath, 'params' => $extends];
+                $promises[] = $this->client->requestAsync($method, $requestPath, $extends);
             }
-            $extends = array_merge($this->options, $extends);
 
             // 发起请求日志
-            $this->logs += ['method' => $method, 'headers' => $headers, 'params' => $extends];
             app()->elog->info(Constants::TOPIC_SERVER, '[HTTP]HTTP发起请求', $this->logs);
 
-            // 发起请求
-            $response = $this->client->send($this->request, $extends);
+            // Wait on all of the requests to complete. Throws a ConnectException
+            // if any of the requests fail
+            $this->response = Promise\unwrap($promises);
 
-            $result = $this->_handleResponse($response);
-
-            if ($result['code'] !== Status::CODE_COMMON_SUCCESS) {
-                $this->setError($result['message']);
-            }
-
-            return $result;
-        } catch (Exception\ClientException | Exception\ServerException | Exception\TooManyRedirectsException |
-                Exception\RequestException | \Exception $ex) {
-            return $this->_handleException($ex);
+            $this->content = $this->_handleResponse();
+        } catch (Exception\ClientException | Exception\ServerException | Exception\TooManyRedirectsException | Exception\RequestException | \Exception $ex) {
+            $this->_handleException($ex);
         }
+
+        return $this;
+    }
+
+    /**
+     * 响应数组.
+     *
+     * @return array
+     */
+    protected function toArray(): array
+    {
+        $content = collect($this->content)->map(function ($item) {
+            $item = \json_decode($item, true);
+
+            return \json_last_error() === JSON_ERROR_NONE ? $item : [];
+        })->toArray();
+
+        return [
+            'code'      => Status::CODE_COMMON_SUCCESS,
+            'message'   => $this->errors ?: 'success',
+            'data'      => $content,
+        ];
+    }
+
+    /**
+     * 响应 Json.
+     *
+     * @return string
+     */
+    protected function toJson(): string
+    {
+        $content = collect($this->content)->map(function ($item) {
+            $item = \json_decode($item, true);
+
+            return \json_last_error() === JSON_ERROR_NONE ? $item : [];
+        })->toArray();
+
+        return \json_encode($content);
+    }
+
+    /**
+     * 响应元数据.
+     *
+     * @return mixed
+     */
+    protected function toBase()
+    {
+        return $this->content;
     }
 
     /**
@@ -172,26 +210,19 @@ abstract class AbstractBaseService
     }
 
     /**
-     * @param $method
-     * @param $path
-     * @param array $headers
-     *
      * @throws NetworkUnavailableException
      */
-    private function _createHttpClient(string $method, string $path, array $headers = null): void
+    private function _createHttpClient(): void
     {
         if ($this->server === null || $this->path === null) {
             throw new NetworkUnavailableException('backend service required');
         }
 
         $baseUri = config($this->server);
-        $requestPath = sprintf('%s/%s', $this->path, $path);
 
         $this->logs['base_uri'] = $baseUri;
-        $this->logs['path'] = $requestPath;
 
         $this->client = new Client(['base_uri' => $baseUri]);
-        $this->request = new Psr7\Request($method, $requestPath, $headers ?? []);
     }
 
     /**
@@ -199,9 +230,9 @@ abstract class AbstractBaseService
      *
      * @param $exception
      *
-     * @return array
+     * @return string
      */
-    private function _handleException(\Throwable $exception): array
+    private function _handleException($exception): string
     {
         $this->endTime = microtime(true);
         $this->logs += [
@@ -209,7 +240,6 @@ abstract class AbstractBaseService
             'code'      => $exception->getCode(),
             'message'   => $exception->getMessage(),
         ];
-
         $this->setError($exception->getMessage());
 
         if ($exception instanceof Exception\ClientException) {
@@ -235,57 +265,40 @@ abstract class AbstractBaseService
         // 请求网络异常日志
         app()->elog->error(Constants::TOPIC_SERVER, 'http response exception', $this->logs);
 
-        return  [
+        $this->content = \json_encode([
             'code'      => Status::CODE_COMMON_RPC_ERROR,
             'message'   => '请求异常',
-        ];
+        ]);
+
+        return $this->content;
     }
 
     /**
      * 响应结果处理.
      *
-     * @param $response
-     *
      * @throws NetworkUnavailableException
      *
      * @return array
      */
-    private function _handleResponse($response): array
+    private function _handleResponse(): array
     {
         $this->endTime = microtime(true);
-        $content = $response->getBody()->getContents();
+
+        array_map(function ($response) {
+            $this->logs['response'][] = [
+                'code'      => $response->getStatusCode(),
+                'message'   => $response->getReasonPhrase(),
+            ];
+            $this->content[] = $response->getBody()->getContents();
+        }, (array) $this->response);
 
         // 接收响应的元数据日志
-        $this->logs += ['time' => $this->getTime(), 'content' => $content];
-        app()->elog->debug(Constants::TOPIC_SERVER, '[HTTP]HTTP请求响应元数据', $this->logs);
-
-        // 解析响应数据
-        if (\json_decode($content) === null) {
-            // 数据解析错误日志
-            $this->logs += ['message' => '返回值格式不正确'];
-            app()->elog->error(Constants::TOPIC_SERVER, '[HTTP]HTTP响应数据解析错误', $this->logs);
-
-            throw new NetworkUnavailableException('json parse failed');
-        }
-
-        $content = \json_decode($content, true);
-
-        // 解析成功的日志
-        $this->logs = [
+        $this->logs += [
             'time'      => $this->getTime(),
-            'code'      => $response->getStatusCode(),
-            'message'   => $response->getReasonPhrase(),
-            'data'      => $content,
+            'content'   => $this->content,
         ];
-
         app()->elog->info(Constants::TOPIC_SERVER, '[HTTP]HTTP请求响应成功', $this->logs);
 
-        $code = (int) array_get($content, 'code', 0);
-
-        return [
-            'code'      => $code === Status::CODE_COMMON_SUCCESS ? Status::CODE_COMMON_SUCCESS : Status::CODE_COMMON_RESOURCE_NOT_EXIST,
-            'message'   => $content['message'] ?? '',
-            'data'      => $content['data'] ?? [],
-        ];
+        return (array) $this->content;
     }
 }

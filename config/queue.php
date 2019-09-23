@@ -68,22 +68,22 @@ return [
 
         'kafka' => [
             'driver'      => 'kafka',
-            'server'      => env('KAFKA_HOST', 'kafka-ons-internet.aliyun.com:8080'),
-            'username'    => env('KAFKA_USERNAME', 'xxxxxxx'),
-            'password'    => env('KAFKA_PASSWORD', 'xxxxxxx'),
-            'ssl_ca_path' => __DIR__.'/cert/kafka-ca-cert',
+            'server'      => service_config('kafka.connnect.server', '127.0.0.1:9092'), //env('KAFKA_HOST', 'kafka-ons-internet.aliyun.com:8080'),
+            //'username'    => env('KAFKA_USERNAME', 'xxxxxxx'),
+            //'password'    => env('KAFKA_PASSWORD', 'xxxxxxx'),
+            //'ssl_ca_path' => __DIR__.'/cert/kafka-ca-cert',
             'options'     => [
                 // 生产者配置
                 'publish'   => [
                     'test' => [
-                        'topic'     => env('KAFKA_SUBSCRIBE_TEST_TOPIC', ''),
+                        'topic'     => env('KAFKA_SUBSCRIBE_TEST_TOPIC', ''), // service_config('kafka.topic.xxxx.name', 'xxxxx'),
                     ],
                 ],
                 // 消费者配置
                 'subscribe' => [
                     'test' => [
                         'topic'     => env('KAFKA_SUBSCRIBE_TEST_TOPIC', ''),
-                        'consumer'  => env('KAFKA_SUBSCRIBE_TEST_CONSUMER', ''),
+                        'consumer'  => env('KAFKA_SUBSCRIBE_TEST_CONSUMER', ''), // service_config('kafka.consumer.xxxx.name', 'xxxx'),
                     ],
                 ],
             ],

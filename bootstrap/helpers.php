@@ -69,7 +69,7 @@ if (!function_exists('lang')) {
     function lang($key = null, $default = null, $replace = [], $locale = null)
     {
         if (!extension_loaded('yaconf')) {
-            return null;
+            return $default;
         }
         $locale = $locale ?? app()->locale;
         $localeKey = 'lang_'.strtolower($locale ?: 'zh_CN');
@@ -103,7 +103,7 @@ if (!function_exists('service_config')) {
     function service_config(string $key = null, string $default = null)
     {
         if (!extension_loaded('yaconf')) {
-            return null;
+            return $default;
         }
         if (!$key) {
             return Yaconf::get('services', []);
