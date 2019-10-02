@@ -1,7 +1,10 @@
 {
     "name": "JingwenTian/laravel-skeleton",
     "description": "Laravel Application skeleton.",
-    "keywords": ["framework", "laravel"],
+    "keywords": [
+        "framework",
+        "laravel"
+    ],
     "license": "MIT",
     "type": "project",
     "require": {
@@ -54,8 +57,7 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": [
-            ]
+            "dont-discover": []
         }
     },
     "scripts": {
@@ -74,12 +76,16 @@
             "/usr/bin/php ./vendor/bin/php-cs-fixer fix --config=.php_cs.dist"
         ]
     },
-    "repositories": [
-        {
+    "repositories": {
+        "0": {
             "type": "git",
             "url": "git@github.com:eventmosh/elog-sdk-php.git"
+        },
+        "packagist": {
+            "type": "composer",
+            "url": "https://mirrors.aliyun.com/composer/"
         }
-    ],
+    },
     "config": {
         "preferred-install": "dist",
         "sort-packages": true,
