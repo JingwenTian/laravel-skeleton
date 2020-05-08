@@ -1,5 +1,5 @@
 {
-    "name": "JingwenTian/laravel-skeleton",
+    "name": "jingwentian/laravel-skeleton",
     "description": "Laravel Application skeleton.",
     "keywords": [
         "framework",
@@ -72,8 +72,8 @@
             "@php artisan package:discover"
         ],
         "codestyle": [
-            "/usr/bin/php ./vendor/bin/phplint",
-            "/usr/bin/php ./vendor/bin/php-cs-fixer fix --config=.php_cs.dist"
+            "@php ./vendor/bin/phplint",
+            "@php ./vendor/bin/php-cs-fixer fix --config=.php_cs.dist"
         ]
     },
     "repositories": {
